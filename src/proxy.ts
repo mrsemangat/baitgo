@@ -24,9 +24,11 @@ export async function proxy(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   const { pathname } = request.nextUrl
 
-  // Redirect unauthenticated users from dashboard to login
-  if (!user && pathname.startsWith('/dashboard')) {
-    return NextResponse.redirect(new URL('/auth/login', request.url))
+  // Redirect unauthenticated users
+  if (!user) {
+    if (pathname.startsWith('/dashboard') || pathname.startsWith('/admin')) {
+      return NextResponse.redirect(new URL('/auth/login', request.url))
+    }
   }
 
   // Redirect authenticated users away from auth pages
@@ -38,5 +40,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/auth/:path*'],
+  matcher: ['/dashboard/:path*', '/admin/:path*', '/auth/:path*'],
 }
