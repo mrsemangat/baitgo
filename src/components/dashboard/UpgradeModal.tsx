@@ -16,9 +16,7 @@ const PREMIUM_FEATURES = [
 ]
 
 const REKENING = [
-  { bank: 'BCA', no: '1234567890', nama: 'BaitGo Indonesia' },
-  { bank: 'BNI', no: '0987654321', nama: 'BaitGo Indonesia' },
-  { bank: 'GoPay / OVO', no: '0812-3456-7890', nama: 'BaitGo' },
+  { bank: 'BCA', no: '0921438361', nama: 'Jajang Taufik H' },
 ]
 
 export function UpgradeModal({ onClose }: UpgradeModalProps) {
@@ -154,11 +152,12 @@ export function UpgradeModal({ onClose }: UpgradeModalProps) {
                     className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#1B6B3A]" />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Transfer via bank / e-wallet</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Transfer via</label>
                   <select value={form.bank} onChange={e => setForm(f => ({ ...f, bank: e.target.value }))}
                     className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#1B6B3A]">
-                    <option value="">Pilih bank...</option>
-                    {REKENING.map(r => <option key={r.bank} value={r.bank}>{r.bank}</option>)}
+                    <option value="">Pilih metode transfer...</option>
+                    <option value="BCA">BCA — 0921438361</option>
+                    <option value="Transfer bank lain">Transfer bank lain ke BCA</option>
                   </select>
                 </div>
                 <div>
@@ -170,17 +169,27 @@ export function UpgradeModal({ onClose }: UpgradeModalProps) {
                 </div>
               </div>
 
+              <div className="bg-[#E8F5ED] rounded-xl p-3 text-xs text-[#1B6B3A] mb-4 leading-relaxed">
+                📱 Setelah mengisi form, klik <strong>Kirim via WhatsApp</strong> untuk mengirim konfirmasi ke tim BaitGo secara langsung.
+              </div>
+
               <div className="flex gap-3">
                 <button onClick={() => setStep('payment')}
                   className="flex-1 border border-gray-200 text-gray-600 py-3 rounded-2xl font-semibold text-sm hover:bg-gray-50">
                   ← Kembali
                 </button>
-                <button
-                  onClick={() => setSubmitted(true)}
-                  disabled={!form.nama || !form.bank}
-                  className="flex-1 bg-[#C9A84C] hover:bg-[#b8963d] disabled:bg-gray-200 disabled:text-gray-400 text-white py-3 rounded-2xl font-bold text-sm transition-colors">
-                  Kirim Konfirmasi ✓
-                </button>
+                <a
+                  href={form.nama && form.bank ? `https://wa.me/6285156060752?text=${encodeURIComponent(`Halo BaitGo, saya sudah transfer Rp 49.000 untuk upgrade Premium.\n\nNama: ${form.nama}\nTransfer via: ${form.bank}\nKeterangan: ${form.bukti || '-'}\n\nMohon aktifkan akun premium saya. Terima kasih 🤲`)}` : '#'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={e => {
+                    if (!form.nama || !form.bank) { e.preventDefault(); return }
+                    setSubmitted(true)
+                  }}
+                  className={`flex-1 text-center py-3 rounded-2xl font-bold text-sm transition-colors ${form.nama && form.bank ? 'bg-[#25D366] hover:bg-[#1fb858] text-white' : 'bg-gray-200 text-gray-400 pointer-events-none'}`}
+                >
+                  Kirim via WhatsApp ✓
+                </a>
               </div>
             </>
           )}

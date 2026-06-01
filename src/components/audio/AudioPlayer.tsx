@@ -1,38 +1,41 @@
 'use client'
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { Play, Pause, Volume2, VolumeX, RotateCcw, Mic } from 'lucide-react'
+import { Play, Pause, Volume2, RotateCcw, Mic } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface AudioPlayerProps {
   src?: string
   doaJudul?: string
-  arabText?: string   // teks Arab untuk dibaca TTS
-  latinText?: string  // fallback Latin jika Arabic voice tidak tersedia
+  arabText?: string
+  latinText?: string
   compact?: boolean
   className?: string
 }
 
-// Cari voice Arab terbaik dari daftar voice browser
-function getArabicVoice(): SpeechSynthesisVoice | null {
+function findArabicVoice(): SpeechSynthesisVoice | null {
   if (typeof window === 'undefined' || !window.speechSynthesis) return null
   const voices = window.speechSynthesis.getVoices()
   return (
     voices.find(v => v.lang === 'ar-SA') ??
     voices.find(v => v.lang.startsWith('ar')) ??
-    voices.find(v => v.lang === 'id-ID') ??
     null
   )
 }
 
-function speakText(text: string, rate: number, onEnd: () => void, onProgress?: (p: number) => void): SpeechSynthesisUtterance | null {
+function speakText(
+  text: string,
+  lang: string,
+  voice: SpeechSynthesisVoice | null,
+  rate: number,
+  onEnd: () => void,
+  onProgress?: (p: number) => void,
+): SpeechSynthesisUtterance | null {
   if (typeof window === 'undefined' || !window.speechSynthesis) return null
-
   window.speechSynthesis.cancel()
 
   const utterance = new SpeechSynthesisUtterance(text)
-  const voice = getArabicVoice()
   if (voice) utterance.voice = voice
-  utterance.lang = voice?.lang ?? 'ar-SA'
+  utterance.lang = lang
   utterance.rate = rate
   utterance.pitch = 1
 
@@ -51,10 +54,8 @@ function speakText(text: string, rate: number, onEnd: () => void, onProgress?: (
       requestAnimationFrame(tick)
     }
   }
-
   utterance.onend = () => { onEnd(); onProgress?.(100) }
   utterance.onerror = () => { onEnd(); onProgress?.(0) }
-
   window.speechSynthesis.speak(utterance)
   return utterance
 }
@@ -62,30 +63,36 @@ function speakText(text: string, rate: number, onEnd: () => void, onProgress?: (
 export function AudioPlayer({ src, doaJudul, arabText, latinText, compact = false, className }: AudioPlayerProps) {
   const [playing, setPlaying] = useState(false)
   const [progress, setProgress] = useState(0)
-  const [rate, setRate] = useState(0.8)  // sedikit lebih lambat untuk ketartilan
-  const [voiceAvail, setVoiceAvail] = useState<boolean | null>(null)
+  const [rate, setRate] = useState(0.8)
+  const [arabicVoice, setArabicVoice] = useState<SpeechSynthesisVoice | null>(null)
+  const [voicesLoaded, setVoicesLoaded] = useState(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
-  const uttRef = useRef<SpeechSynthesisUtterance | null>(null)
 
-  // Cek ketersediaan voice saat mount
   useEffect(() => {
     if (typeof window === 'undefined') return
     const check = () => {
-      const voices = window.speechSynthesis.getVoices()
-      setVoiceAvail(voices.length > 0)
+      setArabicVoice(findArabicVoice())
+      setVoicesLoaded(window.speechSynthesis.getVoices().length > 0)
     }
     check()
     window.speechSynthesis.addEventListener('voiceschanged', check)
     return () => window.speechSynthesis.removeEventListener('voiceschanged', check)
   }, [])
 
-  // Cleanup saat unmount
   useEffect(() => {
     return () => { window.speechSynthesis?.cancel() }
   }, [])
 
-  const textToRead = arabText ?? latinText ?? doaJudul ?? ''
-  const hasTTS = voiceAvail && textToRead.length > 0
+  // Arabic voice available → read Arabic script (ar-SA)
+  // No Arabic voice → read Latin transliteration with default voice (id-ID phonetics)
+  const hasArabicVoice = !!arabicVoice
+  const textToRead = hasArabicVoice && arabText
+    ? arabText
+    : (latinText ?? doaJudul ?? '')
+  const readLang = hasArabicVoice && arabText ? 'ar-SA' : 'id-ID'
+  const readVoice = hasArabicVoice && arabText ? arabicVoice : null
+
+  const hasTTS = voicesLoaded && textToRead.length > 0
   const hasSrc = !!src
 
   const stop = useCallback(() => {
@@ -105,14 +112,18 @@ export function AudioPlayer({ src, doaJudul, arabText, latinText, compact = fals
     }
 
     if (hasTTS) {
+      // Get fresh voice at play-time to avoid stale closure
+      const voice = findArabicVoice()
+      const text = voice && arabText ? arabText : (latinText ?? doaJudul ?? '')
+      const lang = voice && arabText ? 'ar-SA' : 'id-ID'
       setPlaying(true)
       speakText(
-        textToRead, rate,
+        text, lang, voice, rate,
         () => { setPlaying(false); setProgress(0) },
-        p => setProgress(p)
+        p => setProgress(p),
       )
     }
-  }, [playing, hasSrc, hasTTS, textToRead, rate, stop])
+  }, [playing, hasSrc, hasTTS, arabText, latinText, doaJudul, rate, stop])
 
   const cycleRate = () => {
     stop()
@@ -136,7 +147,7 @@ export function AudioPlayer({ src, doaJudul, arabText, latinText, compact = fals
           <span>{playing ? 'Sedang dibaca...' : 'Putar Audio'}</span>
           {playing && (
             <span className="flex gap-0.5 items-end h-4">
-              {[1,2,3,4].map(i => (
+              {[1, 2, 3, 4].map(i => (
                 <span key={i} className="w-0.5 bg-white rounded-full animate-bounce"
                   style={{ height: `${6 + (i % 3) * 4}px`, animationDelay: `${i * 0.12}s` }} />
               ))}
@@ -152,7 +163,16 @@ export function AudioPlayer({ src, doaJudul, arabText, latinText, compact = fals
 
   return (
     <div className={cn('bg-[#F5E6C8] rounded-2xl p-4', className)}>
-      {hasSrc && <audio ref={audioRef} src={src} onEnded={() => { setPlaying(false); setProgress(0) }} onTimeUpdate={() => { if (audioRef.current) setProgress((audioRef.current.currentTime / audioRef.current.duration) * 100) }} />}
+      {hasSrc && (
+        <audio
+          ref={audioRef}
+          src={src}
+          onEnded={() => { setPlaying(false); setProgress(0) }}
+          onTimeUpdate={() => {
+            if (audioRef.current) setProgress((audioRef.current.currentTime / audioRef.current.duration) * 100)
+          }}
+        />
+      )}
 
       {doaJudul && (
         <div className="flex items-center gap-2 mb-3">
@@ -161,7 +181,6 @@ export function AudioPlayer({ src, doaJudul, arabText, latinText, compact = fals
         </div>
       )}
 
-      {/* Progress bar */}
       <div className="h-1.5 bg-[#E8D5A0] rounded-full mb-4 overflow-hidden">
         <div className="h-full bg-[#C9A84C] rounded-full transition-all duration-100" style={{ width: `${progress}%` }} />
       </div>
@@ -182,16 +201,20 @@ export function AudioPlayer({ src, doaJudul, arabText, latinText, compact = fals
 
         <div className="flex items-center gap-2">
           {hasTTS && !hasSrc && (
-            <span className="text-xs text-[#8B6914]/60 bg-[#E8D5A0] px-2 py-0.5 rounded-full">🎙️ TTS</span>
+            <span className="text-xs text-[#8B6914]/60 bg-[#E8D5A0] px-2 py-0.5 rounded-full">
+              {hasArabicVoice ? '🎙️ Arab' : '🔤 Latin'}
+            </span>
           )}
-          <button onClick={cycleRate}
-            className="text-xs font-bold text-[#8B6914] bg-[#E8D5A0] px-2 py-1 rounded-lg hover:bg-[#C9A84C] hover:text-white transition-colors">
+          <button
+            onClick={cycleRate}
+            className="text-xs font-bold text-[#8B6914] bg-[#E8D5A0] px-2 py-1 rounded-lg hover:bg-[#C9A84C] hover:text-white transition-colors"
+          >
             {rateLabel}
           </button>
         </div>
       </div>
 
-      {!hasSrc && !hasTTS && voiceAvail === false && (
+      {!hasSrc && !hasTTS && voicesLoaded && (
         <p className="text-xs text-[#8B6914]/60 mt-2 text-center">
           Browser tidak mendukung text-to-speech. Coba di Chrome/Edge.
         </p>

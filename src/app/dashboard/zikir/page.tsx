@@ -128,7 +128,7 @@ function ZikirCard({
 
           {/* Audio */}
           <div className="mb-4">
-            <AudioPlayer compact doaJudul={item.judul} />
+            <AudioPlayer compact doaJudul={item.judul} arabText={item.arab} latinText={item.latin} />
           </div>
 
           {/* Tombol hitung */}

@@ -104,14 +104,14 @@ export default function LoginPage() {
                 type="submit" disabled={loading}
                 className="w-full bg-[#1B6B3A] hover:bg-[#0D4A28] disabled:bg-gray-300 text-white py-3.5 rounded-xl font-bold text-base transition-colors"
               >
-                {loading ? 'Memuat...' : 'Masuk — Gratis'}
+                {loading ? 'Memuat...' : 'Masuk'}
               </button>
             </form>
 
             <p className="text-center text-sm text-[#6b7280] mt-5">
               Belum punya akun?{' '}
               <Link href="/auth/register" className="text-[#1B6B3A] font-semibold hover:underline">
-                Daftar gratis
+                Daftar sekarang
               </Link>
             </p>
           </div>
