@@ -2,11 +2,9 @@ import {
   pgTable, text, timestamp, boolean, integer, date, jsonb,
   primaryKey, unique,
 } from 'drizzle-orm/pg-core'
-import { randomUUID } from 'crypto'
-
 // ─── Users (gabungan profiles + Supabase auth.users) ─────────────────────────
 export const users = pgTable('users', {
-  id: text('id').primaryKey().$defaultFn(() => randomUUID()),
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   name: text('name'),
   email: text('email').unique().notNull(),
   emailVerified: timestamp('email_verified', { withTimezone: true }),
@@ -46,7 +44,7 @@ export const siteSettings = pgTable('site_settings', {
 
 // ─── Doa Favorites ────────────────────────────────────────────────────────────
 export const doaFavorites = pgTable('doa_favorites', {
-  id: text('id').primaryKey().$defaultFn(() => randomUUID()),
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   doaId: text('doa_id').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
@@ -54,7 +52,7 @@ export const doaFavorites = pgTable('doa_favorites', {
 
 // ─── Ibadah Progress ──────────────────────────────────────────────────────────
 export const ibadahProgress = pgTable('ibadah_progress', {
-  id: text('id').primaryKey().$defaultFn(() => randomUUID()),
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   tahapId: text('tahap_id').notNull(),
   counterValue: integer('counter_value').default(0),
@@ -66,7 +64,7 @@ export const ibadahProgress = pgTable('ibadah_progress', {
 
 // ─── Checklist Progress ───────────────────────────────────────────────────────
 export const checklistProgress = pgTable('checklist_progress', {
-  id: text('id').primaryKey().$defaultFn(() => randomUUID()),
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   itemId: text('item_id').notNull(),
   checked: boolean('checked').default(false),
@@ -75,7 +73,7 @@ export const checklistProgress = pgTable('checklist_progress', {
 
 // ─── Itineraries ──────────────────────────────────────────────────────────────
 export const itineraries = pgTable('itineraries', {
-  id: text('id').primaryKey().$defaultFn(() => randomUUID()),
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   name: text('name').default('Itinerary Umroh Saya'),
   templateId: text('template_id'),
@@ -86,7 +84,7 @@ export const itineraries = pgTable('itineraries', {
 
 // ─── Cost Estimates ───────────────────────────────────────────────────────────
 export const costEstimates = pgTable('cost_estimates', {
-  id: text('id').primaryKey().$defaultFn(() => randomUUID()),
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   name: text('name').default('Estimasi Biaya'),
   config: jsonb('config').notNull(),
@@ -96,7 +94,7 @@ export const costEstimates = pgTable('cost_estimates', {
 
 // ─── Travel Notes ─────────────────────────────────────────────────────────────
 export const travelNotes = pgTable('travel_notes', {
-  id: text('id').primaryKey().$defaultFn(() => randomUUID()),
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   content: text('content'),
   flightNumber: text('flight_number'),
@@ -109,7 +107,7 @@ export const travelNotes = pgTable('travel_notes', {
 
 // ─── Manual Payments ──────────────────────────────────────────────────────────
 export const manualPayments = pgTable('manual_payments', {
-  id: text('id').primaryKey().$defaultFn(() => randomUUID()),
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   merchantOrderId: text('merchant_order_id').unique().notNull(),
   userName: text('user_name'),
@@ -124,7 +122,7 @@ export const manualPayments = pgTable('manual_payments', {
 
 // ─── Webhook Logs ─────────────────────────────────────────────────────────────
 export const webhookLogs = pgTable('webhook_logs', {
-  id: text('id').primaryKey().$defaultFn(() => randomUUID()),
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   source: text('source'),
   event: text('event'),
   orderId: text('order_id'),
