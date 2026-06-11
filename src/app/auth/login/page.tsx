@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { signIn } from 'next-auth/react'
 import { toast } from 'sonner'
 
 export const dynamic = 'force-dynamic'
@@ -12,26 +12,27 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const router = useRouter()
-  const supabase = createClient()
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) {
-      toast.error(error.message === 'Invalid login credentials' ? 'Email atau password salah' : error.message)
+    const result = await signIn('credentials', {
+      email,
+      password,
+      redirect: false,
+    })
+    if (result?.error) {
+      toast.error('Email atau password salah')
     } else {
       toast.success('Bismillah! Selamat datang kembali 🤲')
       router.push('/dashboard')
+      router.refresh()
     }
     setLoading(false)
   }
 
   const handleGoogle = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
-    })
+    await signIn('google', { callbackUrl: '/dashboard' })
   }
 
   return (
@@ -44,13 +45,13 @@ export default function LoginPage() {
         <div className="absolute inset-0 arabesque-pattern opacity-30" />
         <div className="relative z-10 text-center">
           <div className="text-6xl mb-6">🕋</div>
-          <h1 className="text-4xl font-black mb-2">BaitGo</h1>
+          <h1 className="text-4xl font-black mb-2">Umrava</h1>
           <p className="text-[#C9A84C] text-lg font-medium mb-8">Teman setia perjalanan umrohmu</p>
           <div className="bg-white/10 rounded-2xl p-6 backdrop-blur-sm">
             <p className="text-2xl font-arabic mb-3" style={{ fontFamily: "'Amiri', serif", direction: 'rtl', lineHeight: 2 }}>
               بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
             </p>
-            <p className="text-[#C9A84C] text-sm italic">"Umroh adalah tamu Allah"</p>
+            <p className="text-[#C9A84C] text-sm italic">&quot;Umroh adalah tamu Allah&quot;</p>
           </div>
         </div>
       </div>
@@ -61,7 +62,7 @@ export default function LoginPage() {
           {/* Mobile logo */}
           <div className="lg:hidden text-center mb-8">
             <div className="text-4xl mb-2">🕋</div>
-            <h1 className="text-2xl font-black text-[#0D4A28]">BaitGo</h1>
+            <h1 className="text-2xl font-black text-[#0D4A28]">Umrava</h1>
           </div>
 
           <div className="bg-white rounded-3xl p-8 shadow-sm border border-[rgba(201,168,76,0.12)]">
@@ -99,6 +100,11 @@ export default function LoginPage() {
                   placeholder="••••••••"
                   className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#1B6B3A] transition-colors"
                 />
+              </div>
+              <div className="flex justify-end">
+                <Link href="/auth/lupa-password" className="text-xs text-[#1B6B3A] hover:underline">
+                  Lupa password?
+                </Link>
               </div>
               <button
                 type="submit" disabled={loading}

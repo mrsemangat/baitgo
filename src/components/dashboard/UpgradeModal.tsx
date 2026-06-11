@@ -1,34 +1,26 @@
 'use client'
-import { useState } from 'react'
-import { X, Crown, CheckCircle2, Copy, Check } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { X, Crown, CheckCircle2, Shield, Zap } from 'lucide-react'
 
 interface UpgradeModalProps {
   onClose: () => void
 }
 
 const PREMIUM_FEATURES = [
-  'Kalkulator biaya umroh mandiri lengkap',
-  'Itinerary builder + export PDF',
-  'Semua 15+ spot foto & tips detail',
-  'Tracker persiapan lengkap dengan reminder',
-  'Mode offline penuh (download semua konten)',
-  'Update konten seumur hidup',
-]
-
-const REKENING = [
-  { bank: 'BCA', no: '0921438361', nama: 'Jajang Taufik H' },
+  { icon: '☀️', label: 'Zikir Pagi & Petang Al-Banna + counter' },
+  { icon: '📖', label: 'Al-Quran 114 surah + audio Mishary Ar-Rasyid' },
+  { icon: '🤲', label: 'Bank doa lengkap dengan audio Arab' },
+  { icon: '🧭', label: 'Kompas kiblat real-time + kalender Hijriah' },
+  { icon: '📋', label: 'Tracker persiapan & perencanaan biaya detail' },
+  { icon: '♾️', label: 'Semua update fitur tanpa biaya tambahan' },
 ]
 
 export function UpgradeModal({ onClose }: UpgradeModalProps) {
-  const [step, setStep] = useState<'info' | 'payment' | 'confirm'>('info')
-  const [copied, setCopied] = useState<string | null>(null)
-  const [form, setForm] = useState({ bank: '', nama: '', bukti: '' })
-  const [submitted, setSubmitted] = useState(false)
+  const router = useRouter()
 
-  const copyToClipboard = (text: string, key: string) => {
-    navigator.clipboard.writeText(text)
-    setCopied(key)
-    setTimeout(() => setCopied(null), 2000)
+  const handleUpgrade = () => {
+    onClose()
+    router.push('/dashboard/upgrade')
   }
 
   return (
@@ -53,166 +45,38 @@ export function UpgradeModal({ onClose }: UpgradeModalProps) {
           <div className="text-white/60 text-xs mt-1">Lebih murah dari satu makan di Makkah ☕</div>
         </div>
 
-        {/* Steps indicator */}
-        <div className="flex items-center gap-0 px-6 py-3 bg-gray-50 border-b border-gray-100">
-          {['Fitur', 'Pembayaran', 'Konfirmasi'].map((s, i) => {
-            const idx = ['info', 'payment', 'confirm'].indexOf(step)
-            return (
-              <div key={s} className="flex items-center flex-1">
-                <div className={`flex items-center gap-1.5 text-xs font-semibold ${i <= idx ? 'text-[#1B6B3A]' : 'text-gray-400'}`}>
-                  <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-black ${i < idx ? 'bg-[#1B6B3A] text-white' : i === idx ? 'bg-[#C9A84C] text-white' : 'bg-gray-200 text-gray-400'}`}>
-                    {i < idx ? <Check size={10} /> : i + 1}
-                  </div>
-                  {s}
-                </div>
-                {i < 2 && <div className={`flex-1 h-px mx-2 ${i < idx ? 'bg-[#1B6B3A]' : 'bg-gray-200'}`} />}
-              </div>
-            )
-          })}
-        </div>
-
         <div className="p-6">
-          {/* STEP 1 — Info Fitur */}
-          {step === 'info' && (
-            <>
-              <h3 className="font-bold text-gray-900 mb-4">Yang kamu dapatkan:</h3>
-              <div className="space-y-2.5 mb-6">
-                {PREMIUM_FEATURES.map((f, i) => (
-                  <div key={i} className="flex items-start gap-2.5">
-                    <CheckCircle2 size={16} className="text-[#1B6B3A] flex-shrink-0 mt-0.5" />
-                    <span className="text-sm text-gray-700">{f}</span>
-                  </div>
-                ))}
+          <h3 className="font-bold text-gray-900 mb-4">Yang kamu dapatkan:</h3>
+          <div className="space-y-2.5 mb-5">
+            {PREMIUM_FEATURES.map((f, i) => (
+              <div key={i} className="flex items-center gap-2.5">
+                <CheckCircle2 size={15} className="text-[#1B6B3A] flex-shrink-0" />
+                <span className="text-sm text-gray-700">{f.icon} {f.label}</span>
               </div>
-              <div className="bg-[#F5E6C8] rounded-2xl p-4 mb-5 text-sm text-[#8B6914]">
-                <strong>💡 Tidak ada biaya langganan.</strong> Bayar sekali Rp 49.000, nikmati semua fitur premium selamanya termasuk update konten di masa mendatang.
-              </div>
-              <button onClick={() => setStep('payment')}
-                className="w-full bg-[#C9A84C] hover:bg-[#b8963d] text-white py-3.5 rounded-2xl font-bold text-base transition-colors">
-                Lanjut ke Pembayaran →
-              </button>
-            </>
-          )}
+            ))}
+          </div>
 
-          {/* STEP 2 — Pembayaran */}
-          {step === 'payment' && (
-            <>
-              <h3 className="font-bold text-gray-900 mb-1">Transfer Rp 49.000 ke:</h3>
-              <p className="text-xs text-gray-400 mb-4">Pilih salah satu rekening di bawah</p>
+          <div className="bg-[#F5E6C8] rounded-2xl p-4 mb-5 text-sm text-[#8B6914]">
+            <strong>💡 Tidak ada biaya langganan.</strong> Bayar sekali Rp 49.000, nikmati semua fitur premium selamanya.
+          </div>
 
-              <div className="space-y-3 mb-5">
-                {REKENING.map((r, i) => (
-                  <div key={i} className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-xs font-bold text-gray-500 uppercase">{r.bank}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="text-lg font-black text-gray-900 tracking-wide">{r.no}</div>
-                        <div className="text-xs text-gray-400">a/n {r.nama}</div>
-                      </div>
-                      <button
-                        onClick={() => copyToClipboard(r.no, r.bank)}
-                        className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl font-semibold transition-all ${copied === r.bank ? 'bg-green-100 text-green-600' : 'bg-white border border-gray-200 text-gray-600 hover:border-[#C9A84C]'}`}>
-                        {copied === r.bank ? <><Check size={12} /> Disalin</> : <><Copy size={12} /> Salin</>}
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+          {/* Trust badges */}
+          <div className="flex items-center justify-center gap-4 mb-5 text-xs text-gray-400">
+            <div className="flex items-center gap-1"><Shield size={12} className="text-green-500" /> Pembayaran Aman</div>
+            <div className="flex items-center gap-1"><Zap size={12} className="text-yellow-500" /> Aktivasi Instan</div>
+            <div className="flex items-center gap-1">🔒 SSL Terenkripsi</div>
+          </div>
 
-              <div className="bg-blue-50 rounded-xl p-3 text-xs text-blue-600 mb-5">
-                ⚠️ Pastikan transfer tepat <strong>Rp 49.000</strong>. Setelah transfer, lanjut ke langkah konfirmasi agar akun diaktifkan lebih cepat.
-              </div>
+          <button
+            onClick={handleUpgrade}
+            className="w-full bg-[#C9A84C] hover:bg-[#b8963d] text-white py-4 rounded-2xl font-black text-base transition-all shadow-md active:scale-[0.98]"
+          >
+            Pilih Metode Pembayaran →
+          </button>
 
-              <div className="flex gap-3">
-                <button onClick={() => setStep('info')}
-                  className="flex-1 border border-gray-200 text-gray-600 py-3 rounded-2xl font-semibold text-sm hover:bg-gray-50 transition-colors">
-                  ← Kembali
-                </button>
-                <button onClick={() => setStep('confirm')}
-                  className="flex-1 bg-[#1B6B3A] hover:bg-[#0D4A28] text-white py-3 rounded-2xl font-bold text-sm transition-colors">
-                  Sudah Transfer →
-                </button>
-              </div>
-            </>
-          )}
-
-          {/* STEP 3 — Konfirmasi */}
-          {step === 'confirm' && !submitted && (
-            <>
-              <h3 className="font-bold text-gray-900 mb-1">Konfirmasi Pembayaran</h3>
-              <p className="text-xs text-gray-400 mb-4">Isi form ini agar kami bisa aktifkan akun premium-mu lebih cepat</p>
-
-              <div className="space-y-3 mb-5">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Nama di rekening pengirim</label>
-                  <input value={form.nama} onChange={e => setForm(f => ({ ...f, nama: e.target.value }))}
-                    placeholder="Nama lengkap"
-                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#1B6B3A]" />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Transfer via</label>
-                  <select value={form.bank} onChange={e => setForm(f => ({ ...f, bank: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#1B6B3A]">
-                    <option value="">Pilih metode transfer...</option>
-                    <option value="BCA">BCA — 0921438361</option>
-                    <option value="Transfer bank lain">Transfer bank lain ke BCA</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Catatan (opsional)</label>
-                  <textarea value={form.bukti} onChange={e => setForm(f => ({ ...f, bukti: e.target.value }))}
-                    placeholder="Nomor referensi transfer atau keterangan lain"
-                    rows={2}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#1B6B3A] resize-none" />
-                </div>
-              </div>
-
-              <div className="bg-[#E8F5ED] rounded-xl p-3 text-xs text-[#1B6B3A] mb-4 leading-relaxed">
-                📱 Setelah mengisi form, klik <strong>Kirim via WhatsApp</strong> untuk mengirim konfirmasi ke tim BaitGo secara langsung.
-              </div>
-
-              <div className="flex gap-3">
-                <button onClick={() => setStep('payment')}
-                  className="flex-1 border border-gray-200 text-gray-600 py-3 rounded-2xl font-semibold text-sm hover:bg-gray-50">
-                  ← Kembali
-                </button>
-                <a
-                  href={form.nama && form.bank ? `https://wa.me/6285156060752?text=${encodeURIComponent(`Halo BaitGo, saya sudah transfer Rp 49.000 untuk upgrade Premium.\n\nNama: ${form.nama}\nTransfer via: ${form.bank}\nKeterangan: ${form.bukti || '-'}\n\nMohon aktifkan akun premium saya. Terima kasih 🤲`)}` : '#'}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={e => {
-                    if (!form.nama || !form.bank) { e.preventDefault(); return }
-                    setSubmitted(true)
-                  }}
-                  className={`flex-1 text-center py-3 rounded-2xl font-bold text-sm transition-colors ${form.nama && form.bank ? 'bg-[#25D366] hover:bg-[#1fb858] text-white' : 'bg-gray-200 text-gray-400 pointer-events-none'}`}
-                >
-                  Kirim via WhatsApp ✓
-                </a>
-              </div>
-            </>
-          )}
-
-          {/* SUKSES */}
-          {step === 'confirm' && submitted && (
-            <div className="text-center py-4">
-              <div className="w-16 h-16 rounded-full bg-[#E8F5ED] flex items-center justify-center mx-auto mb-4">
-                <CheckCircle2 size={32} className="text-[#1B6B3A]" />
-              </div>
-              <h3 className="font-black text-xl text-gray-900 mb-2">Konfirmasi Diterima!</h3>
-              <p className="text-gray-500 text-sm mb-4 leading-relaxed">
-                Tim BaitGo akan memverifikasi pembayaranmu dan mengaktifkan akun premium dalam <strong>1×24 jam</strong> (biasanya lebih cepat).
-              </p>
-              <div className="bg-[#E8F5ED] rounded-2xl p-4 text-sm text-[#1B6B3A] mb-5">
-                🤲 Semoga Allah memudahkan perjalanan umrohmu
-              </div>
-              <button onClick={onClose}
-                className="w-full bg-[#1B6B3A] hover:bg-[#0D4A28] text-white py-3 rounded-2xl font-bold transition-colors">
-                Kembali ke Dashboard
-              </button>
-            </div>
-          )}
+          <p className="text-center text-xs text-gray-400 mt-3">
+            Pembayaran aman · VA, QRIS, Minimarket, E-Wallet, Transfer Manual
+          </p>
         </div>
       </div>
     </div>

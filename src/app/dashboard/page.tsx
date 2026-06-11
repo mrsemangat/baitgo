@@ -1,4 +1,7 @@
-import { createClient } from '@/lib/supabase/server'
+import { auth } from '@/lib/auth'
+import { db } from '@/lib/db'
+import { users, checklistProgress, ibadahProgress } from '@/lib/db/schema'
+import { eq, and } from 'drizzle-orm'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Card } from '@/components/ui/Card'
@@ -18,35 +21,26 @@ const TIPS_HARIAN = [
 ]
 
 export default async function DashboardPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/auth/login')
+  const session = await auth()
+  if (!session?.user) redirect('/auth/login')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single()
+  const [profile] = await db.select().from(users).where(eq(users.id, session.user.id)).limit(1)
 
-  const { data: checklist } = await supabase
-    .from('checklist_progress')
-    .select('item_id')
-    .eq('user_id', user.id)
-    .eq('checked', true)
+  const checklist = await db.select({ itemId: checklistProgress.itemId })
+    .from(checklistProgress)
+    .where(and(eq(checklistProgress.userId, session.user.id), eq(checklistProgress.checked, true)))
 
-  const { data: ibadahProgress } = await supabase
-    .from('ibadah_progress')
-    .select('*')
-    .eq('user_id', user.id)
+  const ibadahProgressData = await db.select().from(ibadahProgress)
+    .where(eq(ibadahProgress.userId, session.user.id))
 
   const totalItems = 32
-  const checked = checklist?.length ?? 0
+  const checked = checklist.length
   const progress = Math.round((checked / totalItems) * 100)
-  const daysLeft = profile?.departure_date ? getDaysUntil(profile.departure_date) : null
-  const activeTahap = ibadahProgress?.find(p => !p.completed)
+  const daysLeft = profile?.departureDate ? getDaysUntil(profile.departureDate) : null
+  const activeTahap = ibadahProgressData.find(p => !p.completed)
   const todayTip = TIPS_HARIAN[new Date().getDay()]
 
-  const name = profile?.full_name ?? user.email?.split('@')[0] ?? 'Jamaah'
+  const name = profile?.fullName ?? session.user.email?.split('@')[0] ?? 'Jamaah'
   const firstName = name.split(' ')[0]
   const isPremium = profile?.plan === 'premium'
 
@@ -86,7 +80,7 @@ export default async function DashboardPage() {
         </Card>
         <Card className="text-center py-4">
           <div className="text-3xl font-black text-[#C9A84C] mb-1">
-            {ibadahProgress?.filter(p => p.completed).length ?? 0}/6
+            {ibadahProgressData.filter(p => p.completed).length}/6
           </div>
           <div className="text-xs text-[#6b7280]">Tahap ibadah</div>
         </Card>
@@ -99,7 +93,7 @@ export default async function DashboardPage() {
             <div className="text-3xl mb-3">🕌</div>
             <div className="font-bold text-[#0D4A28] mb-1">Lanjut Panduan Ibadah</div>
             <div className="text-sm text-[#6b7280]">
-              {activeTahap ? `Sedang di Tahap ${activeTahap.tahap_id}` : 'Mulai dari Tahap 1'}
+              {activeTahap ? `Sedang di Tahap ${activeTahap.tahapId}` : 'Mulai dari Tahap 1'}
             </div>
             <div className="mt-3 text-xs text-[#1B6B3A] font-semibold group-hover:underline">
               Buka panduan →
@@ -151,13 +145,13 @@ export default async function DashboardPage() {
           <div className="text-right mb-3" style={{ fontFamily: "'Amiri', serif", fontSize: 24, direction: 'rtl', lineHeight: 2 }}>
             سُبْحَانَ اللَّهِ وَبِحَمْدِهِ، سُبْحَانَ اللَّهِ الْعَظِيمِ
           </div>
-          <p className="text-sm italic text-[#6b7280] mb-2">Subhanallaahi wa bihamdihi, subhanallaahil-'azhiim</p>
+          <p className="text-sm italic text-[#6b7280] mb-2">Subhanallaahi wa bihamdihi, subhanallaahil-&apos;azhiim</p>
           <p className="text-sm text-[#374151]">Maha Suci Allah dan dengan memuji-Nya, Maha Suci Allah Yang Maha Agung.</p>
         </div>
       </Card>
 
       {/* Setup departure date CTA */}
-      {!profile?.departure_date && (
+      {!profile?.departureDate && (
         <Card className="border-2 border-dashed border-[#C9A84C] bg-[#FFFDF5]">
           <div className="text-center py-2">
             <div className="text-3xl mb-2">📅</div>

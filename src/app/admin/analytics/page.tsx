@@ -1,4 +1,6 @@
-import { createClient } from '@/lib/supabase/server'
+import { db } from '@/lib/db'
+import { users, doaFavorites, ibadahProgress, checklistProgress } from '@/lib/db/schema'
+import { eq, count, sql } from 'drizzle-orm'
 import { formatRupiah } from '@/lib/utils'
 import { DATA_DOA } from '@/data/doa'
 import { TAHAP_IBADAH } from '@/data/panduan'
@@ -6,30 +8,34 @@ import { TAHAP_IBADAH } from '@/data/panduan'
 export const dynamic = 'force-dynamic'
 
 export default async function AdminAnalyticsPage() {
-  const supabase = await createClient()
+  const [totalRow] = await db.select({ count: count() }).from(users)
+  const [premiumRow] = await db.select({ count: count() }).from(users).where(eq(users.plan, 'premium'))
 
-  const [
-    { data: stats },
-    { data: doaFavs },
-    { data: ibadahProgress },
-    { data: checklistProgress },
-    { data: allProfiles },
-  ] = await Promise.all([
-    supabase.from('admin_user_stats').select('*').single(),
-    supabase.from('doa_favorites').select('doa_id, created_at'),
-    supabase.from('ibadah_progress').select('tahap_id, completed, counter_value'),
-    supabase.from('checklist_progress').select('item_id, checked, user_id'),
-    supabase.from('profiles').select('plan, city, created_at').order('created_at'),
-  ])
+  const doaFavRows = await db.select({ doaId: doaFavorites.doaId }).from(doaFavorites)
+  const ibadahRows = await db.select({
+    tahapId: ibadahProgress.tahapId,
+    completed: ibadahProgress.completed,
+    counterValue: ibadahProgress.counterValue,
+  }).from(ibadahProgress)
+  const checklistRows = await db.select({
+    itemId: checklistProgress.itemId,
+    checked: checklistProgress.checked,
+    userId: checklistProgress.userId,
+  }).from(checklistProgress)
+  const allProfiles = await db.select({
+    plan: users.plan,
+    city: users.city,
+    createdAt: users.createdAt,
+  }).from(users).orderBy(sql`${users.createdAt} asc`)
 
   // Doa stats
   const doaCount: Record<string, number> = {}
-  doaFavs?.forEach(f => { doaCount[f.doa_id] = (doaCount[f.doa_id] ?? 0) + 1 })
+  doaFavRows.forEach(f => { doaCount[f.doaId] = (doaCount[f.doaId] ?? 0) + 1 })
   const topDoa = Object.entries(doaCount)
     .sort(([,a],[,b]) => b - a).slice(0, 8)
-    .map(([id, count]) => ({
+    .map(([id, cnt]) => ({
       id,
-      count,
+      count: cnt,
       judul: DATA_DOA.find(d => d.id === id)?.judul ?? id,
       pct: 0,
     }))
@@ -38,7 +44,7 @@ export default async function AdminAnalyticsPage() {
 
   // Ibadah tahap stats
   const tahapStats = TAHAP_IBADAH.map(t => {
-    const records = ibadahProgress?.filter(i => i.tahap_id === t.id) ?? []
+    const records = ibadahRows.filter(i => i.tahapId === t.id)
     return {
       id: t.id,
       judul: t.judul,
@@ -46,22 +52,23 @@ export default async function AdminAnalyticsPage() {
       started: records.length,
       completed: records.filter(r => r.completed).length,
       avgCounter: records.length
-        ? Math.round(records.reduce((s, r) => s + (r.counter_value ?? 0), 0) / records.length)
+        ? Math.round(records.reduce((s, r) => s + (r.counterValue ?? 0), 0) / records.length)
         : 0,
     }
   })
 
   // City stats
   const cityCount: Record<string, number> = {}
-  allProfiles?.forEach(p => {
+  allProfiles.forEach(p => {
     if (p.city) cityCount[p.city] = (cityCount[p.city] ?? 0) + 1
   })
   const topCities = Object.entries(cityCount).sort(([,a],[,b]) => b - a).slice(0, 6)
 
   // Plan by month (last 6 months)
   const monthlyData: Record<string, { free: number; premium: number }> = {}
-  allProfiles?.forEach(p => {
-    const month = new Date(p.created_at).toLocaleDateString('id-ID', { month: 'short', year: '2-digit' })
+  allProfiles.forEach(p => {
+    if (!p.createdAt) return
+    const month = new Date(p.createdAt).toLocaleDateString('id-ID', { month: 'short', year: '2-digit' })
     if (!monthlyData[month]) monthlyData[month] = { free: 0, premium: 0 }
     if (p.plan === 'premium') monthlyData[month].premium++
     else monthlyData[month].free++
@@ -69,13 +76,13 @@ export default async function AdminAnalyticsPage() {
   const months = Object.entries(monthlyData).slice(-6)
   const maxMonth = Math.max(...months.map(([, d]) => d.free + d.premium), 1)
 
-  const revenue = (stats?.premium_users ?? 0) * 49000
-  const conversionRate = stats?.total_users
-    ? ((stats.premium_users / stats.total_users) * 100).toFixed(1) : '0'
+  const totalUsers = totalRow.count
+  const premiumUsers = premiumRow.count
+  const revenue = premiumUsers * 49000
+  const conversionRate = totalUsers ? ((premiumUsers / totalUsers) * 100).toFixed(1) : '0'
 
-  // Checklist completion rate
-  const checklistUsers = new Set(checklistProgress?.map(c => c.user_id) ?? []).size
-  const checklistChecked = checklistProgress?.filter(c => c.checked).length ?? 0
+  const checklistUsers = new Set(checklistRows.map(c => c.userId)).size
+  const checklistChecked = checklistRows.filter(c => c.checked).length
   const totalPossible = checklistUsers * 32
   const checklistRate = totalPossible > 0 ? Math.round((checklistChecked / totalPossible) * 100) : 0
 
@@ -83,15 +90,15 @@ export default async function AdminAnalyticsPage() {
     <div>
       <div className="mb-6">
         <h1 className="text-2xl font-black text-gray-900">Analytics</h1>
-        <p className="text-gray-500 text-sm">Data penggunaan fitur dan pertumbuhan BaitGo</p>
+        <p className="text-gray-500 text-sm">Data penggunaan fitur dan pertumbuhan Umrava</p>
       </div>
 
       {/* KPI Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         {[
-          { label: 'Total Revenue', val: formatRupiah(revenue), icon: '💰', sub: `${stats?.premium_users ?? 0} user premium`, color: 'from-[#0D4A28] to-[#1B6B3A]' },
+          { label: 'Total Revenue', val: formatRupiah(revenue), icon: '💰', sub: `${premiumUsers} user premium`, color: 'from-[#0D4A28] to-[#1B6B3A]' },
           { label: 'Konversi', val: `${conversionRate}%`, icon: '📈', sub: 'Free → Premium', color: 'from-[#8B6914] to-[#C9A84C]' },
-          { label: 'Doa Difavoritkan', val: doaFavs?.length ?? 0, icon: '❤️', sub: `${topDoa.length} doa unik`, color: 'from-red-500 to-red-400' },
+          { label: 'Doa Difavoritkan', val: doaFavRows.length, icon: '❤️', sub: `${topDoa.length} doa unik`, color: 'from-red-500 to-red-400' },
           { label: 'Checklist Rate', val: `${checklistRate}%`, icon: '✅', sub: `${checklistUsers} user aktif`, color: 'from-blue-600 to-blue-400' },
         ].map((kpi, i) => (
           <div key={i} className={`bg-gradient-to-br ${kpi.color} text-white rounded-2xl p-5 shadow-sm`}>
@@ -113,7 +120,6 @@ export default async function AdminAnalyticsPage() {
             <div className="space-y-3">
               {months.map(([month, data]) => {
                 const total = data.free + data.premium
-                const pct = Math.round((total / maxMonth) * 100)
                 return (
                   <div key={month}>
                     <div className="flex items-center justify-between text-sm mb-1">
@@ -198,8 +204,8 @@ export default async function AdminAnalyticsPage() {
             <div className="text-center py-8 text-gray-400 text-sm">Belum ada data kota</div>
           ) : (
             <div className="space-y-3">
-              {topCities.map(([city, count], i) => {
-                const pct = Math.round((count / topCities[0][1]) * 100)
+              {topCities.map(([city, cnt], i) => {
+                const pct = Math.round((cnt / topCities[0][1]) * 100)
                 return (
                   <div key={city}>
                     <div className="flex items-center justify-between text-sm mb-1">
@@ -207,7 +213,7 @@ export default async function AdminAnalyticsPage() {
                         <span className="text-gray-400 text-xs w-4">{i+1}</span>
                         <span className="font-medium text-gray-700">{city}</span>
                       </div>
-                      <span className="font-bold text-gray-600">{count} user</span>
+                      <span className="font-bold text-gray-600">{cnt} user</span>
                     </div>
                     <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
                       <div className="h-full bg-[#1B6B3A] rounded-full" style={{ width: `${pct}%` }} />
@@ -225,13 +231,13 @@ export default async function AdminAnalyticsPage() {
         <h2 className="font-bold text-gray-900 mb-4">📊 Ringkasan Statistik</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { label: 'Total User', val: stats?.total_users ?? 0 },
-            { label: 'User Premium', val: stats?.premium_users ?? 0 },
-            { label: 'User Free', val: stats?.free_users ?? 0 },
-            { label: 'Baru 7 Hari', val: stats?.new_this_week ?? 0 },
-            { label: 'Baru 30 Hari', val: stats?.new_this_month ?? 0 },
-            { label: 'Total Favorit Doa', val: doaFavs?.length ?? 0 },
+            { label: 'Total User', val: totalUsers },
+            { label: 'User Premium', val: premiumUsers },
+            { label: 'User Free', val: totalUsers - premiumUsers },
+            { label: 'Total Favorit Doa', val: doaFavRows.length },
             { label: 'User Aktif Checklist', val: checklistUsers },
+            { label: 'Checklist Selesai', val: checklistChecked },
+            { label: 'Tahap Ibadah Selesai', val: ibadahRows.filter(i => i.completed).length },
             { label: 'Est. Revenue', val: formatRupiah(revenue) },
           ].map((item, i) => (
             <div key={i} className="bg-gray-50 rounded-xl p-3 text-center">

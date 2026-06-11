@@ -22,7 +22,7 @@ export function LandingNav() {
       <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-[#1B6B3A] flex items-center justify-center text-lg">🕋</div>
-          <span className="font-black text-xl text-[#0D4A28]">BaitGo</span>
+          <span className="font-black text-xl text-[#0D4A28]">Umrava</span>
         </Link>
 
         {/* Desktop nav */}

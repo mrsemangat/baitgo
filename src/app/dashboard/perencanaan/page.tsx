@@ -337,7 +337,7 @@ function ItineraryTab() {
         doc.rect(0, 0, pageW, 12, 'F')
         doc.setTextColor(255, 255, 255)
         doc.setFontSize(8)
-        doc.text('BaitGo — Teman Setia Perjalanan Umrohmu', margin, 8)
+        doc.text('Umrava — Teman Setia Perjalanan Umrohmu', margin, 8)
         doc.text(template.judul, pageW - margin, 8, { align: 'right' })
         y = 18
       }
@@ -367,7 +367,7 @@ function ItineraryTab() {
       doc.text(template.judul, margin + 32, 35)
       doc.setTextColor(200, 220, 200)
       doc.setFontSize(10)
-      doc.text('BaitGo — Panduan Umroh Indonesia', margin + 32, 43)
+      doc.text('Umrava — Panduan Umroh Indonesia', margin + 32, 43)
       doc.text(`Dibuat: ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`, margin + 32, 50)
 
       // Info strip
@@ -378,7 +378,7 @@ function ItineraryTab() {
       doc.setFont('helvetica', 'bold')
       doc.text(`${template.durasi} Hari Perjalanan`, margin, 83)
       doc.text(`${template.hari.length} Hari Terjadwal`, pageW / 2, 83, { align: 'center' })
-      doc.text('Powered by BaitGo', pageW - margin, 83, { align: 'right' })
+      doc.text('Powered by Umrava', pageW - margin, 83, { align: 'right' })
 
       // Deskripsi
       doc.setTextColor(60, 60, 60)
@@ -476,7 +476,7 @@ function ItineraryTab() {
       doc.setTextColor(100, 100, 100)
       doc.setFontSize(8)
       doc.setFont('helvetica', 'normal')
-      doc.text('BaitGo — baitgo.vercel.app | Panduan Umroh Lengkap untuk Jamaah Indonesia', pageW / 2, y + 16, { align: 'center' })
+      doc.text('Umrava — umrava.com | Panduan Umroh Lengkap untuk Jamaah Indonesia', pageW / 2, y + 16, { align: 'center' })
       doc.setTextColor(150, 150, 150)
       doc.setFontSize(7)
       doc.text('Disclaimer: Itinerary ini bersifat panduan. Sesuaikan dengan kondisi aktual di lapangan.', pageW / 2, y + 22, { align: 'center' })
@@ -487,10 +487,10 @@ function ItineraryTab() {
         doc.setPage(i)
         doc.setFontSize(7)
         doc.setTextColor(150, 150, 150)
-        doc.text(`Halaman ${i} dari ${totalPages} | BaitGo`, pageW / 2, pageH - 6, { align: 'center' })
+        doc.text(`Halaman ${i} dari ${totalPages} | Umrava`, pageW / 2, pageH - 6, { align: 'center' })
       }
 
-      doc.save(`Itinerary-Umroh-BaitGo-${template.durasi}Hari.pdf`)
+      doc.save(`Itinerary-Umroh-Umrava-${template.durasi}Hari.pdf`)
     } catch (err) {
       console.error('PDF error:', err)
       alert('Gagal generate PDF. Coba lagi.')

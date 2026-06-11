@@ -8,10 +8,15 @@ import { UpgradeModal } from './UpgradeModal'
 
 const NAV_ITEMS = [
   { href: '/dashboard', icon: '🏠', label: 'Beranda' },
+  { href: '/dashboard/quran', icon: '📖', label: 'Al-Quran' },
+  { href: '/dashboard/kiblat', icon: '🧭', label: 'Kiblat & Waktu' },
+  { href: '/dashboard/shalat', icon: '🕐', label: 'Jadwal Shalat' },
   { href: '/dashboard/panduan', icon: '🕌', label: 'Panduan Ibadah' },
   { href: '/dashboard/doa', icon: '🤲', label: 'Bank Doa' },
   { href: '/dashboard/zikir', icon: '☀️', label: 'Zikir Pagi & Petang', premium: true },
   { href: '/dashboard/perencanaan', icon: '📋', label: 'Perencanaan' },
+  { href: '/dashboard/packing', icon: '🧳', label: 'Packing List' },
+  { href: '/dashboard/konversi', icon: '💱', label: 'Konversi SAR' },
   { href: '/dashboard/spot-foto', icon: '📸', label: 'Spot Foto' },
   { href: '/dashboard/panduan-praktis', icon: '🗺️', label: 'Panduan Praktis' },
   { href: '/dashboard/tracker', icon: '✅', label: 'Tracker Persiapan' },
@@ -42,7 +47,7 @@ export function Sidebar({ userName = 'Jamaah', departureDate, prepProgress = 0, 
             🕋
           </div>
           <div>
-            <div className="text-[#F5E6C8] font-bold text-lg leading-tight">BaitGo</div>
+            <div className="text-[#F5E6C8] font-bold text-lg leading-tight">Umrava</div>
             <div className="text-[#C9A84C] text-xs">Panduan Umroh</div>
           </div>
         </Link>

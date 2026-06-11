@@ -1,38 +1,37 @@
 import { Sidebar } from '@/components/dashboard/Sidebar'
 import { PlanProvider } from '@/components/dashboard/PlanProvider'
-import { createClient } from '@/lib/supabase/server'
+import { auth } from '@/lib/auth'
+import { db } from '@/lib/db'
+import { users, checklistProgress } from '@/lib/db/schema'
+import { eq, and } from 'drizzle-orm'
 import { redirect } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const session = await auth()
+  if (!session?.user) redirect('/auth/login')
 
-  if (!user) redirect('/auth/login')
+  const [userRow] = await db.select().from(users)
+    .where(eq(users.id, session.user.id)).limit(1)
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single()
-
-  const { data: checklist } = await supabase
-    .from('checklist_progress')
-    .select('item_id')
-    .eq('user_id', user.id)
-    .eq('checked', true)
+  const checklist = await db.select({ itemId: checklistProgress.itemId })
+    .from(checklistProgress)
+    .where(and(
+      eq(checklistProgress.userId, session.user.id),
+      eq(checklistProgress.checked, true)
+    ))
 
   const totalItems = 32
-  const progress = Math.round(((checklist?.length ?? 0) / totalItems) * 100)
-  const isPremium = profile?.plan === 'premium'
+  const progress = Math.round((checklist.length / totalItems) * 100)
+  const isPremium = userRow?.plan === 'premium'
 
   return (
     <PlanProvider isPremium={isPremium}>
       <div className="min-h-screen bg-[#FBF7F0]">
         <Sidebar
-          userName={profile?.full_name}
-          departureDate={profile?.departure_date}
+          userName={userRow?.fullName ?? undefined}
+          departureDate={userRow?.departureDate ?? undefined}
           prepProgress={progress}
           isPremium={isPremium}
         />

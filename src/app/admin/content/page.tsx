@@ -26,7 +26,7 @@ export default function AdminContentPage() {
     <div>
       <div className="mb-6">
         <h1 className="text-2xl font-black text-gray-900">Manajemen Konten</h1>
-        <p className="text-gray-500 text-sm">Review dan pantau semua konten BaitGo</p>
+        <p className="text-gray-500 text-sm">Review dan pantau semua konten Umrava</p>
       </div>
 
       {/* Tabs */}

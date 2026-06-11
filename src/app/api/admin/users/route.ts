@@ -1,56 +1,74 @@
-import { createClient } from '@/lib/supabase/server'
-import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@/lib/auth'
+import { db } from '@/lib/db'
+import { users } from '@/lib/db/schema'
+import { eq, ilike, or, sql } from 'drizzle-orm'
+import { NextResponse } from 'next/server'
+import bcrypt from 'bcryptjs'
+import { NextRequest } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
-async function requireAdmin() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: 'Unauthorized', supabase: null }
-  const { data: p } = await supabase.from('profiles').select('is_admin').eq('id', user.id).single()
-  if (!p?.is_admin) return { error: 'Forbidden', supabase: null }
-  return { error: null, supabase }
+const DEFAULT_PASSWORD = 'Umrava26'
+
+async function isAdmin() {
+  const session = await auth()
+  return session?.user?.isAdmin === true
 }
 
 export async function GET(req: NextRequest) {
-  const { error, supabase } = await requireAdmin()
-  if (error || !supabase) return NextResponse.json({ error }, { status: error === 'Unauthorized' ? 401 : 403 })
+  if (!(await isAdmin())) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const { searchParams } = new URL(req.url)
   const page = parseInt(searchParams.get('page') ?? '1')
   const limit = parseInt(searchParams.get('limit') ?? '20')
   const search = searchParams.get('search') ?? ''
   const plan = searchParams.get('plan') ?? ''
-  const from = (page - 1) * limit
+  const offset = (page - 1) * limit
 
-  let query = supabase
-    .from('profiles')
-    .select('*', { count: 'exact' })
-    .order('created_at', { ascending: false })
-    .range(from, from + limit - 1)
+  let query = db.select().from(users).$dynamic()
 
-  if (search) query = query.or(`full_name.ilike.%${search}%,email.ilike.%${search}%`)
-  if (plan) query = query.eq('plan', plan)
+  if (search && plan) {
+    query = query.where(
+      sql`(${ilike(users.fullName, `%${search}%`)} or ${ilike(users.email, `%${search}%`)}) and ${eq(users.plan, plan)}`
+    ) as typeof query
+  } else if (search) {
+    query = query.where(
+      or(ilike(users.fullName, `%${search}%`), ilike(users.email, `%${search}%`))
+    ) as typeof query
+  } else if (plan) {
+    query = query.where(eq(users.plan, plan)) as typeof query
+  }
 
-  const { data: users, count } = await query
-  return NextResponse.json({ users, total: count, page, limit })
+  const allUsers = await query.orderBy(sql`${users.createdAt} desc`).limit(limit).offset(offset)
+
+  // Total count
+  const [{ total }] = await db.select({ total: sql<number>`count(*)` }).from(users)
+
+  return NextResponse.json({ users: allUsers, total: Number(total), page, limit })
 }
 
 export async function PATCH(req: NextRequest) {
-  const { error, supabase } = await requireAdmin()
-  if (error || !supabase) return NextResponse.json({ error }, { status: 403 })
+  if (!(await isAdmin())) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-  const { userId, plan, is_admin } = await req.json()
-  const update: Record<string, unknown> = {}
-  if (plan !== undefined) {
-    update.plan = plan
-    if (plan === 'premium') update.premium_activated_at = new Date().toISOString()
+  const body = await req.json()
+  const { userId, plan, is_admin, action } = body
+
+  if (action === 'reset_password') {
+    const hashed = await bcrypt.hash(DEFAULT_PASSWORD, 10)
+    await db.update(users).set({ password: hashed, updatedAt: new Date() }).where(eq(users.id, userId))
+    return NextResponse.json({ ok: true, message: `Password direset ke "${DEFAULT_PASSWORD}"` })
   }
-  if (is_admin !== undefined) update.is_admin = is_admin
 
-  const { data, error: updateError } = await supabase
-    .from('profiles').update(update).eq('id', userId).select().single()
+  const updates: Partial<typeof users.$inferInsert> = {}
+  if (plan !== undefined) {
+    updates.plan = plan
+    if (plan === 'premium') updates.premiumActivatedAt = new Date()
+  }
+  if (is_admin !== undefined) updates.isAdmin = is_admin
+  if (Object.keys(updates).length > 0) {
+    updates.updatedAt = new Date()
+    await db.update(users).set(updates).where(eq(users.id, userId))
+  }
 
-  if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 })
-  return NextResponse.json({ user: data })
+  return NextResponse.json({ ok: true })
 }

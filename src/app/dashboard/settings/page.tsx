@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button'
 import { KOTA_ASAL } from '@/data/biaya'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
-import { createClient } from '@/lib/supabase/client'
+import { signOut } from 'next-auth/react'
 import { LogOut } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
@@ -18,28 +18,24 @@ export default function SettingsPage() {
   const [loadingProfile, setLoadingProfile] = useState(true)
   const [offlineMode, setOfflineMode] = useState(false)
   const router = useRouter()
-  const supabase = createClient()
 
   useEffect(() => {
     const loadProfile = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-
-      const fullName = user.user_metadata?.full_name ?? user.user_metadata?.name ?? ''
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('full_name, departure_date, city')
-        .eq('id', user.id)
-        .single()
-
-      setForm(f => ({
-        ...f,
-        name: profile?.full_name || fullName,
-        departure: profile?.departure_date ?? '',
-        city: profile?.city ?? 'jakarta',
-      }))
-      setLoadingProfile(false)
+      try {
+        const res = await fetch('/api/user/profile')
+        if (!res.ok) return
+        const { profile } = await res.json()
+        if (profile) {
+          setForm(f => ({
+            ...f,
+            name: profile.fullName || '',
+            departure: profile.departureDate ?? '',
+            city: profile.city ?? 'jakarta',
+          }))
+        }
+      } catch { /* ignore */ } finally {
+        setLoadingProfile(false)
+      }
     }
     loadProfile()
   }, [])
@@ -47,19 +43,17 @@ export default function SettingsPage() {
   const save = async () => {
     setSaving(true)
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { toast.error('Sesi berakhir, silakan login kembali'); return }
-
       const cityValue = form.city === 'lainnya' ? (form.cityCustom || 'lainnya') : form.city
-
-      await supabase.from('profiles').upsert({
-        id: user.id,
-        full_name: form.name,
-        departure_date: form.departure || null,
-        city: cityValue,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: 'id' })
-
+      const res = await fetch('/api/user/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fullName: form.name,
+          city: cityValue,
+          departureDate: form.departure || null,
+        }),
+      })
+      if (!res.ok) throw new Error('Gagal menyimpan')
       toast.success('Pengaturan tersimpan!')
     } catch {
       toast.error('Gagal menyimpan, coba lagi')
@@ -69,15 +63,14 @@ export default function SettingsPage() {
   }
 
   const logout = async () => {
-    await supabase.auth.signOut()
-    router.push('/auth/login')
+    await signOut({ callbackUrl: '/auth/login' })
   }
 
   return (
     <div className="max-w-2xl mx-auto">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-[#0D4A28] mb-1">⚙️ Pengaturan</h1>
-        <p className="text-[#6b7280] text-sm">Kelola profil dan preferensi BaitGo</p>
+        <p className="text-[#6b7280] text-sm">Kelola profil dan preferensi Umrava</p>
       </div>
 
       {/* Tabs */}
@@ -269,7 +262,7 @@ export default function SettingsPage() {
         <Card>
           <div className="text-center py-4">
             <div className="text-5xl mb-4">🕋</div>
-            <h2 className="text-xl font-bold text-[#0D4A28] mb-1">BaitGo</h2>
+            <h2 className="text-xl font-bold text-[#0D4A28] mb-1">Umrava</h2>
             <p className="text-sm text-[#6b7280] mb-4">Teman setia perjalanan umrohmu</p>
             <div className="text-xs text-[#6b7280] space-y-1">
               <p>Versi 1.0.0</p>

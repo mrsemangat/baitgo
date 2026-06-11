@@ -1,41 +1,47 @@
-import { createClient } from '@/lib/supabase/server'
+import { auth } from '@/lib/auth'
+import { db } from '@/lib/db'
+import { users, doaFavorites } from '@/lib/db/schema'
+import { eq, count, sql } from 'drizzle-orm'
 import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const session = await auth()
+  if (!session?.user?.isAdmin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-  const { data: profile } = await supabase
-    .from('profiles').select('is_admin').eq('id', user.id).single()
-  if (!profile?.is_admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const [totalUsersRow] = await db.select({ count: count() }).from(users)
+  const [premiumRow] = await db.select({ count: count() }).from(users).where(eq(users.plan, 'premium'))
+  const [freeRow] = await db.select({ count: count() }).from(users).where(eq(users.plan, 'free'))
 
-  const { data: stats } = await supabase.from('admin_user_stats').select('*').single()
-  const { data: recentUsers } = await supabase
-    .from('profiles')
-    .select('id, full_name, email, plan, city, created_at, departure_date, is_admin')
-    .order('created_at', { ascending: false })
-    .limit(10)
+  const stats = {
+    total_users: totalUsersRow.count,
+    premium_users: premiumRow.count,
+    free_users: freeRow.count,
+  }
 
-  const { data: checklistStats } = await supabase
-    .from('checklist_progress')
-    .select('item_id, checked')
-    .eq('checked', true)
+  const recentUsers = await db.select({
+    id: users.id,
+    fullName: users.fullName,
+    email: users.email,
+    plan: users.plan,
+    city: users.city,
+    createdAt: users.createdAt,
+    departureDate: users.departureDate,
+    isAdmin: users.isAdmin,
+  }).from(users).orderBy(sql`${users.createdAt} desc`).limit(10)
 
-  const { data: doaFavStats } = await supabase
-    .from('doa_favorites')
-    .select('doa_id')
-
+  const doaFavRows = await db.select({ doaId: doaFavorites.doaId }).from(doaFavorites)
   const doaCount: Record<string, number> = {}
-  doaFavStats?.forEach(f => { doaCount[f.doa_id] = (doaCount[f.doa_id] || 0) + 1 })
+  for (const row of doaFavRows) {
+    doaCount[row.doaId] = (doaCount[row.doaId] || 0) + 1
+  }
   const topDoa = Object.entries(doaCount)
     .sort(([, a], [, b]) => b - a)
     .slice(0, 5)
-    .map(([id, count]) => ({ id, count }))
+    .map(([id, cnt]) => ({ id, count: cnt }))
 
-  const revenue = (stats?.premium_users ?? 0) * 49000
+  const revenue = premiumRow.count * 49000
 
   return NextResponse.json({ stats, recentUsers, topDoa, revenue })
 }

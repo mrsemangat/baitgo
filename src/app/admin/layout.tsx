@@ -1,24 +1,24 @@
-import { createClient } from '@/lib/supabase/server'
+import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { AdminSidebar } from '@/components/admin/AdminSidebar'
+import { db } from '@/lib/db'
+import { users } from '@/lib/db/schema'
+import { eq } from 'drizzle-orm'
 
 export const dynamic = 'force-dynamic'
-
-export const metadata = { title: 'Admin — BaitGo' }
+export const metadata = { title: 'Admin — Umrava' }
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/auth/login')
+  const session = await auth()
+  if (!session?.user) redirect('/auth/login')
+  if (!session.user.isAdmin) redirect('/dashboard')
 
-  const { data: profile } = await supabase
-    .from('profiles').select('full_name, email, is_admin').eq('id', user.id).single()
-
-  if (!profile?.is_admin) redirect('/dashboard')
+  const [userRow] = await db.select({ fullName: users.fullName, email: users.email })
+    .from(users).where(eq(users.id, session.user.id)).limit(1)
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      <AdminSidebar adminName={profile.full_name ?? profile.email ?? 'Admin'} />
+      <AdminSidebar adminName={userRow?.fullName ?? userRow?.email ?? 'Admin'} />
       <main className="flex-1 lg:ml-64 min-h-screen">
         <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">
           {children}

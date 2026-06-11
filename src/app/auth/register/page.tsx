@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { signIn } from 'next-auth/react'
 import { toast } from 'sonner'
 
 export const dynamic = 'force-dynamic'
@@ -11,31 +11,55 @@ export default function RegisterPage() {
   const [form, setForm] = useState({ name: '', email: '', password: '' })
   const [loading, setLoading] = useState(false)
   const router = useRouter()
-  const supabase = createClient()
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
     if (form.password.length < 6) { toast.error('Password minimal 6 karakter'); return }
     setLoading(true)
-    const { error } = await supabase.auth.signUp({
+
+    // Buat user via server route
+    const res = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(form),
+    })
+    const data = await res.json()
+
+    if (!res.ok) {
+      toast.error(data.error || 'Gagal mendaftar')
+      setLoading(false)
+      return
+    }
+
+    // Login otomatis setelah berhasil daftar
+    const result = await signIn('credentials', {
       email: form.email,
       password: form.password,
-      options: { data: { full_name: form.name } },
+      redirect: false,
     })
-    if (error) {
-      toast.error(error.message)
-    } else {
-      toast.success('Akun berhasil dibuat! Bismillah 🤲')
-      router.push('/dashboard')
+
+    if (result?.error) {
+      toast.success('Akun berhasil dibuat! Silakan login.')
+      router.push('/auth/login')
+      return
     }
+
+    toast.success('Bismillah! Selamat datang di Umrava 🕋')
+
+    if (typeof window !== 'undefined' && (window as Window & { fbq?: Function }).fbq) {
+      (window as Window & { fbq?: Function }).fbq?.('track', 'InitiateCheckout', {
+        content_name: 'Umrava Premium',
+        value: 49,
+        currency: 'IDR',
+      })
+    }
+
+    router.push('/dashboard')
     setLoading(false)
   }
 
   const handleGoogle = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
-    })
+    await signIn('google', { callbackUrl: '/dashboard' })
   }
 
   return (
@@ -48,15 +72,15 @@ export default function RegisterPage() {
         <div className="absolute inset-0 arabesque-pattern opacity-30" />
         <div className="relative z-10 text-center">
           <div className="text-6xl mb-6">🕋</div>
-          <h1 className="text-4xl font-black mb-2">BaitGo</h1>
+          <h1 className="text-4xl font-black mb-2">Umrava</h1>
           <p className="text-[#C9A84C] text-lg font-medium mb-8">Mulai persiapan umrohmu</p>
 
           <div className="space-y-4 text-left">
             {[
-              { icon: '📖', text: 'Panduan ibadah step-by-step lengkap' },
-              { icon: '🤲', text: '20+ doa dengan audio & teks Arab' },
-              { icon: '📸', text: 'Spot foto terbaik di Tanah Suci' },
-              { icon: '💰', text: 'Kalkulator biaya umroh mandiri' },
+              { icon: '📖', text: 'Al-Quran 114 surah + terjemah + murottal' },
+              { icon: '🧭', text: 'Kompas kiblat real-time + kalender Hijriah' },
+              { icon: '🤲', text: 'Bank doa umroh dengan audio Arab' },
+              { icon: '🕌', text: 'Panduan ibadah step-by-step lengkap' },
               { icon: '✅', text: 'Tracker & checklist persiapan' },
             ].map((f, i) => (
               <div key={i} className="flex items-center gap-3 bg-white/10 rounded-xl px-4 py-2.5 backdrop-blur-sm">
@@ -75,12 +99,12 @@ export default function RegisterPage() {
         <div className="w-full max-w-md">
           <div className="lg:hidden text-center mb-8">
             <div className="text-4xl mb-2">🕋</div>
-            <h1 className="text-2xl font-black text-[#0D4A28]">BaitGo</h1>
+            <h1 className="text-2xl font-black text-[#0D4A28]">Umrava</h1>
           </div>
 
           <div className="bg-white rounded-3xl p-8 shadow-sm border border-[rgba(201,168,76,0.12)]">
             <h2 className="text-2xl font-bold text-[#0D4A28] mb-1">Mulai Persiapan — Gratis</h2>
-            <p className="text-[#6b7280] text-sm mb-6">Buat akun BaitGo, tidak perlu kartu kredit</p>
+            <p className="text-[#6b7280] text-sm mb-6">Buat akun Umrava, tidak perlu kartu kredit</p>
 
             <button
               onClick={handleGoogle}
@@ -130,7 +154,8 @@ export default function RegisterPage() {
             </form>
 
             <p className="text-xs text-center text-[#6b7280] mt-4">
-              Dengan mendaftar, Anda menyetujui Syarat & Ketentuan BaitGo
+              Dengan mendaftar, Anda menyetujui{' '}
+              <Link href="/syarat-ketentuan" className="text-[#1B6B3A] underline">Syarat & Ketentuan</Link> Umrava
             </p>
 
             <p className="text-center text-sm text-[#6b7280] mt-4">

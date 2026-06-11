@@ -4,26 +4,26 @@ import { usePathname } from 'next/navigation'
 import { useState } from 'react'
 import { Menu, X, ChevronRight, LogOut } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
+import { signOut } from 'next-auth/react'
 
 const NAV = [
   { href: '/admin', icon: '📊', label: 'Overview' },
   { href: '/admin/users', icon: '👥', label: 'Manajemen User' },
   { href: '/admin/paket', icon: '👑', label: 'Manajemen Paket' },
+  { href: '/admin/email', icon: '📧', label: 'Pengaturan Email' },
   { href: '/admin/webhooks', icon: '🔗', label: 'Webhook ScaleV' },
   { href: '/admin/content', icon: '📝', label: 'Manajemen Konten' },
   { href: '/admin/analytics', icon: '📈', label: 'Analytics' },
+  { href: '/admin/tracking', icon: '🎯', label: 'Tracking & Pixel' },
+  { href: '/admin/payment', icon: '💳', label: 'Pengaturan Payment' },
 ]
 
 export function AdminSidebar({ adminName }: { adminName: string }) {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
-  const router = useRouter()
 
   const logout = async () => {
-    await createClient().auth.signOut()
-    router.push('/auth/login')
+    await signOut({ callbackUrl: '/auth/login' })
   }
 
   const Content = () => (
@@ -33,7 +33,7 @@ export function AdminSidebar({ adminName }: { adminName: string }) {
         <Link href="/admin" className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-[#C9A84C] flex items-center justify-center text-lg font-bold text-white shadow">🕋</div>
           <div>
-            <div className="text-white font-bold text-base leading-tight">BaitGo</div>
+            <div className="text-white font-bold text-base leading-tight">Umrava</div>
             <div className="text-xs text-gray-400 font-medium">Admin Panel</div>
           </div>
         </Link>

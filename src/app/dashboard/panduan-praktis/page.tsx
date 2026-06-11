@@ -82,8 +82,8 @@ const KONTEN: Record<string, { judul: string; isi: string }[]> = {
       isi: 'WAJIB dilakukan sebelum berangkat:\n\n1. Buka Google Maps\n2. Tap foto profil > Offline Maps\n3. Pilih area Makkah Al-Mukarramah\n4. Pilih area Madinah Al-Munawwarah\n5. Download (masing-masing ~100-200MB)\n\n✅ Peta offline memungkinkan navigasi tanpa internet — sangat berguna saat sinyal lemah di dalam masjid atau area padat',
     },
     {
-      judul: '📱 Download Konten BaitGo Offline',
-      isi: 'Semua konten panduan dan doa BaitGo bisa diakses offline setelah didownload:\n\n1. Buka Pengaturan > Download Offline\n2. Tap "Download Semua Konten"\n3. Tunggu proses download selesai (perlu koneksi WiFi)\n\n✅ Setelah terdownload, semua panduan, doa, dan audio bisa diakses tanpa internet\n✅ Fitur ini tersedia untuk pengguna Premium dan Free',
+      judul: '📱 Download Konten Umrava Offline',
+      isi: 'Semua konten panduan dan doa Umrava bisa diakses offline setelah didownload:\n\n1. Buka Pengaturan > Download Offline\n2. Tap "Download Semua Konten"\n3. Tunggu proses download selesai (perlu koneksi WiFi)\n\n✅ Setelah terdownload, semua panduan, doa, dan audio bisa diakses tanpa internet\n✅ Fitur ini tersedia untuk pengguna Premium dan Free',
     },
   ],
 }

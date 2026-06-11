@@ -69,7 +69,7 @@ export const CHECKLIST_FASES: ChecklistFase[] = [
     waktu: '1 Minggu Sebelum Berangkat',
     items: [
       { id: 'cek-jadwal-pesawat', fase: 'h1-minggu', kategori: 'digital', label: 'Cek dan konfirmasi jadwal penerbangan', info: 'Hubungi maskapai atau cek aplikasi untuk memastikan tidak ada perubahan jadwal.' },
-      { id: 'download-offline', fase: 'h1-minggu', kategori: 'digital', label: 'Download konten BaitGo untuk mode offline', info: 'Buka menu Pengaturan > Download Offline. Download semua panduan dan doa agar bisa diakses tanpa internet.' },
+      { id: 'download-offline', fase: 'h1-minggu', kategori: 'digital', label: 'Download konten Umrava untuk mode offline', info: 'Buka menu Pengaturan > Download Offline. Download semua panduan dan doa agar bisa diakses tanpa internet.' },
       { id: 'maps-offline', fase: 'h1-minggu', kategori: 'digital', label: 'Download peta offline Makkah & Madinah di Google Maps', info: 'Buka Google Maps > profil > Offline Maps > pilih area Makkah dan Madinah.' },
       { id: 'konfirmasi-hotel', fase: 'h1-minggu', kategori: 'persiapan', label: 'Konfirmasi booking hotel', info: 'Hubungi hotel langsung atau melalui platform booking untuk memastikan reservasi terkonfirmasi.' },
       { id: 'beritahu-keluarga', fase: 'h1-minggu', kategori: 'persiapan', label: 'Beritahu keluarga jadwal keberangkatan lengkap', info: 'Berikan jadwal penerbangan, nama hotel, dan kontak darurat kepada keluarga di rumah.' },

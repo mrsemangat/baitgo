@@ -1,0 +1,22 @@
+import { auth } from '@/lib/auth'
+import { db } from '@/lib/db'
+import { webhookLogs } from '@/lib/db/schema'
+import { desc } from 'drizzle-orm'
+import { NextResponse } from 'next/server'
+
+export const dynamic = 'force-dynamic'
+
+export async function GET() {
+  const session = await auth()
+  if (!session?.user?.isAdmin) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  const logs = await db
+    .select()
+    .from(webhookLogs)
+    .orderBy(desc(webhookLogs.createdAt))
+    .limit(100)
+
+  return NextResponse.json(logs)
+}

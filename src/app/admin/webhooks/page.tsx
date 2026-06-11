@@ -2,21 +2,20 @@
 import { useState, useEffect, useCallback } from 'react'
 import { RefreshCw, CheckCircle2, XCircle, Clock, ChevronDown, ChevronUp, Copy, Check } from 'lucide-react'
 import { formatRupiah } from '@/lib/utils'
-import { createClient } from '@/lib/supabase/client'
 
 interface WebhookLog {
   id: string
   source: string
   event: string
-  order_id: string | null
-  buyer_email: string | null
-  buyer_name: string | null
+  orderId: string | null
+  buyerEmail: string | null
+  buyerName: string | null
   amount: number | null
   status: string | null
-  user_upgraded: boolean
+  userUpgraded: boolean
   error: string | null
   payload: Record<string, unknown>
-  created_at: string
+  createdAt: string
 }
 
 const STATUS_BADGE: Record<string, string> = {
@@ -37,26 +36,23 @@ export default function AdminWebhooksPage() {
 
   const webhookUrl = typeof window !== 'undefined'
     ? `${window.location.origin}/api/webhook/scalev`
-    : 'https://baitgo.vercel.app/api/webhook/scalev'
+    : 'https://umrava.com/api/webhook/scalev'
 
   const fetchLogs = useCallback(async () => {
     setLoading(true)
-    const supabase = createClient()
-    const { data } = await supabase
-      .from('webhook_logs')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(100)
-
-    if (data) {
-      setLogs(data)
-      setStats({
-        total: data.length,
-        upgraded: data.filter(l => l.user_upgraded).length,
-        errors: data.filter(l => l.error && !l.user_upgraded).length,
-        revenue: data.filter(l => l.user_upgraded).reduce((s, l) => s + (l.amount ?? 0), 0),
-      })
-    }
+    try {
+      const res = await fetch('/api/admin/webhooks')
+      if (res.ok) {
+        const data: WebhookLog[] = await res.json()
+        setLogs(data)
+        setStats({
+          total: data.length,
+          upgraded: data.filter(l => l.userUpgraded).length,
+          errors: data.filter(l => l.error && !l.userUpgraded).length,
+          revenue: data.filter(l => l.userUpgraded).reduce((s, l) => s + (l.amount ?? 0), 0),
+        })
+      }
+    } catch { /* ignore */ }
     setLoading(false)
   }, [])
 
@@ -115,7 +111,7 @@ export default function AdminWebhooksPage() {
         <h2 className="font-bold text-gray-900 mb-4">📋 Cara Setup di ScaleV</h2>
         <ol className="space-y-3">
           {[
-            { step: '1', text: 'Login ke ScaleV → buka produk BaitGo Premium' },
+            { step: '1', text: 'Login ke ScaleV → buka produk Umrava Premium' },
             { step: '2', text: 'Masuk ke Settings → Webhook / Integrasi' },
             { step: '3', text: 'Tempel URL webhook di atas ke kolom "Webhook URL"' },
             { step: '4', text: 'Salin "Webhook Secret" dari ScaleV → tambahkan ke Vercel env vars sebagai SCALEV_WEBHOOK_SECRET' },
@@ -130,12 +126,8 @@ export default function AdminWebhooksPage() {
             </li>
           ))}
         </ol>
-
-        {/* Env var reminder */}
         <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-xl p-3 text-xs text-yellow-700">
-          <strong>⚠️ Penting:</strong> tambahkan <code className="bg-yellow-100 px-1 rounded">SCALEV_WEBHOOK_SECRET</code> dan{' '}
-          <code className="bg-yellow-100 px-1 rounded">SUPABASE_SERVICE_ROLE_KEY</code> ke Vercel Environment Variables
-          sebelum live. Tanpanya, webhook tetap berjalan tapi tanpa verifikasi signature.
+          <strong>⚠️ Penting:</strong> tambahkan <code className="bg-yellow-100 px-1 rounded">SCALEV_WEBHOOK_SECRET</code> ke Vercel Environment Variables sebelum live.
         </div>
       </div>
 
@@ -179,9 +171,8 @@ export default function AdminWebhooksPage() {
                   onClick={() => setExpandedId(expandedId === log.id ? null : log.id)}
                   className="flex items-center gap-4 px-5 py-3.5 hover:bg-gray-50 cursor-pointer transition-colors"
                 >
-                  {/* Status icon */}
                   <div className="flex-shrink-0">
-                    {log.user_upgraded ? (
+                    {log.userUpgraded ? (
                       <CheckCircle2 size={18} className="text-green-500" />
                     ) : log.error ? (
                       <XCircle size={18} className="text-red-400" />
@@ -190,38 +181,33 @@ export default function AdminWebhooksPage() {
                     )}
                   </div>
 
-                  {/* Email + name */}
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-semibold text-gray-900 truncate">
-                      {log.buyer_email ?? '(no email)'}
+                      {log.buyerEmail ?? '(no email)'}
                     </div>
                     <div className="text-xs text-gray-400 truncate">
-                      {log.buyer_name ?? ''} {log.order_id ? `· Order: ${log.order_id}` : ''}
+                      {log.buyerName ?? ''} {log.orderId ? `· Order: ${log.orderId}` : ''}
                     </div>
                   </div>
 
-                  {/* Amount */}
                   {log.amount ? (
                     <div className="text-sm font-bold text-[#1B6B3A] flex-shrink-0">
                       {formatRupiah(log.amount)}
                     </div>
                   ) : null}
 
-                  {/* Status badge */}
                   <span className={`text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0 ${STATUS_BADGE[log.status?.toLowerCase() ?? ''] ?? 'bg-gray-100 text-gray-500'}`}>
                     {log.status ?? 'unknown'}
                   </span>
 
-                  {/* Upgraded badge */}
-                  {log.user_upgraded && (
+                  {log.userUpgraded && (
                     <span className="text-xs bg-green-100 text-green-700 px-2.5 py-1 rounded-full font-bold flex-shrink-0">
                       ✅ Upgraded
                     </span>
                   )}
 
-                  {/* Time */}
                   <div className="text-xs text-gray-400 flex-shrink-0 hidden md:block">
-                    {new Date(log.created_at).toLocaleString('id-ID', {
+                    {new Date(log.createdAt).toLocaleString('id-ID', {
                       day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
                     })}
                   </div>
@@ -231,7 +217,6 @@ export default function AdminWebhooksPage() {
                     : <ChevronDown size={14} className="text-gray-400 flex-shrink-0" />}
                 </div>
 
-                {/* Expanded payload */}
                 {expandedId === log.id && (
                   <div className="px-5 pb-4 bg-gray-50 border-t border-gray-100">
                     {log.error && (

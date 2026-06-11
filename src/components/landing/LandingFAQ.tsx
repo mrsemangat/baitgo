@@ -4,32 +4,40 @@ import { ChevronDown, ChevronUp } from 'lucide-react'
 
 const FAQS = [
   {
-    q: 'Apakah konten doa bisa diakses offline?',
-    a: 'Ya! Pengguna Free bisa download panduan ibadah dan doa untuk akses offline. Pengguna Premium bisa download seluruh konten termasuk spot foto dan panduan praktis. Download tersedia di menu Pengaturan > Download Offline.'
+    q: 'Fitur apa saja yang tersedia gratis?',
+    a: 'Fitur gratis Umrava sangat lengkap: Al-Quran 114 surah dengan terjemah Indonesia + audio Mishary, Kompas Kiblat real-time, Jam & Penanggalan Hijriah/Masehi, Bank Doa umroh, Panduan ibadah step-by-step, Spot foto pilihan, Checklist persiapan dasar, dan Tracker keberangkatan. Fitur Premium (Zikir Pagi & Petang Al-Banna + semua fitur lengkap) tersedia dengan upgrade sekali bayar Rp49.000.'
+  },
+  {
+    q: 'Bagaimana cara membayar upgrade Premium?',
+    a: 'Setelah login, klik tombol "Upgrade Premium" lalu pilih metode pembayaran yang tersedia: Virtual Account (BRI, BNI, BSI, Mandiri, Permata, CIMB), QRIS (scan dari GoPay/OVO/DANA/ShopeePay), Minimarket (Alfamart/Indomaret), atau E-Wallet. Setelah pembayaran terkonfirmasi, akun Premium Anda aktif secara otomatis — tidak perlu konfirmasi manual.'
+  },
+  {
+    q: 'Apakah Al-Quran bisa digunakan tanpa internet?',
+    a: 'Teks Arab dan terjemah Al-Quran memerlukan koneksi internet untuk pertama kali memuat surah (diambil dari API). Audio murottal Mishary Rashid Alafasy juga di-stream saat diputar. Untuk penggunaan offline penuh, kami sarankan membuka surah saat terhubung internet, lalu browser akan meng-cache kontennya.'
+  },
+  {
+    q: 'Seakurat apa kompas kiblat di Umrava?',
+    a: 'Kompas kiblat menggunakan GPS perangkat untuk menghitung arah Makkah secara presisi berdasarkan koordinat lokasi Anda. Akurasi bergantung pada sensor kompas di HP Anda dan kondisi lingkungan (jauh dari benda logam besar). Kompas digital perlu dikalibrasi — gerakkan HP membentuk angka 8 jika arah terasa tidak akurat. Untuk shalat, tetap konfirmasi dengan cara konvensional jika ada keraguan.'
   },
   {
     q: 'Apakah audio doa bisa diputar saat layar HP mati?',
-    a: 'Ya, ini adalah salah satu fitur utama BaitGo. Audio doa menggunakan background audio sehingga tetap berjalan meski layar mati atau saat Anda berpindah aplikasi. Cocok saat sedang tawaf atau sa\'i.'
+    a: 'Ya, ini adalah salah satu fitur utama Umrava. Audio doa menggunakan audio web browser yang tetap berjalan meski layar mati atau saat Anda berpindah aplikasi. Cocok saat sedang tawaf atau sa\'i agar tangan bebas.'
   },
   {
     q: 'Apakah panduan ibadahnya sesuai dengan mazhab Syafi\'i?',
-    a: 'Ya, konten panduan ibadah di BaitGo mengacu pada panduan umroh yang umum digunakan jamaah Indonesia yang mayoritas mengikuti mazhab Syafi\'i. Kami selalu menambahkan disclaimer agar Anda konsultasikan hal yang meragukan dengan ustadz.'
+    a: 'Ya, konten panduan ibadah di Umrava mengacu pada panduan umroh yang umum digunakan jamaah Indonesia yang mayoritas mengikuti mazhab Syafi\'i. Kami selalu menambahkan disclaimer agar Anda konsultasikan hal yang meragukan dengan ustadz atau pembimbing umroh.'
   },
   {
-    q: 'Mengapa bayar sekali, bukan langganan?',
-    a: 'Karena umroh bukan kebutuhan bulanan! Kami percaya tidak adil membebankan biaya langganan untuk sesuatu yang mungkin hanya Anda gunakan sekali atau beberapa kali seumur hidup. Bayar sekali, gunakan selamanya — termasuk update konten.'
+    q: 'Mengapa bayar sekali, bukan berlangganan?',
+    a: 'Karena umroh bukan kebutuhan bulanan! Kami percaya tidak adil membebankan biaya langganan untuk sesuatu yang mungkin hanya Anda gunakan sekali atau beberapa kali seumur hidup. Bayar Rp49.000 sekali, gunakan selamanya — termasuk semua update fitur di masa mendatang.'
   },
   {
     q: 'Apakah app ini bisa dipakai untuk haji juga?',
-    a: 'BaitGo saat ini fokus pada panduan umroh. Banyak elemen ibadah umroh (tawaf, sa\'i, miqat, doa) juga ada dalam ibadah haji, sehingga tetap relevan. Panduan haji lengkap sedang dalam pengembangan untuk update mendatang.'
+    a: 'Umrava saat ini fokus pada panduan umroh. Banyak elemen ibadah umroh (tawaf, sa\'i, miqat, doa) juga ada dalam ibadah haji, sehingga tetap relevan. Al-Quran, Kompas Kiblat, dan Zikir dapat digunakan kapan saja termasuk saat haji.'
   },
   {
-    q: 'Apakah konten akan diupdate?',
-    a: 'Ya! Pengguna Premium mendapatkan update konten seumur hidup tanpa biaya tambahan. Kami secara rutin menambahkan spot foto baru, tips terbaru, dan penyempurnaan konten panduan.'
-  },
-  {
-    q: 'Bisakah satu akun dipakai untuk seluruh keluarga?',
-    a: 'Satu akun BaitGo bisa digunakan di maksimal 2 perangkat secara bersamaan. Untuk keluarga besar, disarankan memiliki akun terpisah agar progress checklist dan tracker masing-masing tidak bercampur.'
+    q: 'Bagaimana jika pembayaran berhasil tapi akun belum Premium?',
+    a: 'Untuk pembayaran via gateway (VA/QRIS), aktivasi berjalan otomatis dalam hitungan detik. Untuk transfer manual, aktivasi dilakukan oleh admin setelah konfirmasi (1–24 jam). Jika dalam 10 menit akun belum berubah setelah bayar via gateway, coba refresh halaman atau logout dan login kembali. Jika masih bermasalah, hubungi kami di info@umrava.com.'
   },
 ]
 
