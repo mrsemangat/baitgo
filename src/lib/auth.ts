@@ -6,6 +6,8 @@ import { db } from './db'
 import { users, accounts } from './db/schema'
 import { eq } from 'drizzle-orm'
 import bcrypt from 'bcryptjs'
+import { sendEmail } from './mailketing'
+import { buildWelcomeEmail } from './emailTemplates'
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: DrizzleAdapter(db, {
@@ -13,6 +15,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     accountsTable: accounts,
   }),
   session: { strategy: 'jwt' },
+  events: {
+    async createUser({ user }) {
+      // Kirim welcome email untuk user baru (Google OAuth atau register biasa)
+      if (!user.email) return
+      const nama = (user.name ?? user.email.split('@')[0]).split(' ')[0]
+      sendEmail(buildWelcomeEmail({ nama_user: nama, email: user.email })).catch(() => {})
+
+      // Set fullName dari Google profile jika belum ada
+      if (user.name) {
+        await db.update(users)
+          .set({ fullName: user.name, updatedAt: new Date() })
+          .where(eq(users.id, user.id!))
+          .catch(() => {})
+      }
+    },
+  },
   providers: [
     CredentialsProvider({
       credentials: {

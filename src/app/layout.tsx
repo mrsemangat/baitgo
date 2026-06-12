@@ -17,6 +17,11 @@ export const metadata: Metadata = {
     description: "Dari persiapan sampai pulang — semua ada di Umrava",
     type: "website",
   },
+  icons: {
+    icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
+    apple: '/favicon.svg',
+  },
 }
 
 async function getSiteSettings(): Promise<{ pixelId: string; gtmId: string }> {
