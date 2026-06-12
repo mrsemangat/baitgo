@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { signIn } from 'next-auth/react'
+import { signIn, getSession } from 'next-auth/react'
 import { toast } from 'sonner'
 
 export const dynamic = 'force-dynamic'
@@ -25,14 +25,15 @@ export default function LoginPage() {
       toast.error('Email atau password salah')
     } else {
       toast.success('Bismillah! Selamat datang kembali 🤲')
-      router.push('/dashboard')
+      const session = await getSession()
+      router.push(session?.user?.isAdmin ? '/admin' : '/dashboard')
       router.refresh()
     }
     setLoading(false)
   }
 
   const handleGoogle = async () => {
-    await signIn('google', { callbackUrl: '/dashboard' })
+    await signIn('google', { callbackUrl: '/auth/redirect' })
   }
 
   return (

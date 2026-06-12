@@ -42,7 +42,7 @@ export default async function DashboardPage() {
 
   const name = profile?.fullName ?? session.user.email?.split('@')[0] ?? 'Jamaah'
   const firstName = name.split(' ')[0]
-  const isPremium = profile?.plan === 'premium'
+  const isPremium = profile?.plan === 'premium' || profile?.isAdmin === true
 
   return (
     <div className="max-w-4xl mx-auto">

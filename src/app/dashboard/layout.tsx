@@ -24,7 +24,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const totalItems = 32
   const progress = Math.round((checklist.length / totalItems) * 100)
-  const isPremium = userRow?.plan === 'premium'
+  const isPremium = userRow?.plan === 'premium' || userRow?.isAdmin === true
 
   return (
     <PlanProvider isPremium={isPremium}>
