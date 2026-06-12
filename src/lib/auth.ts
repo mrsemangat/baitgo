@@ -17,18 +17,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: 'jwt' },
   events: {
     async createUser({ user }) {
-      // Kirim welcome email untuk user baru (Google OAuth atau register biasa)
       if (!user.email) return
       const nama = (user.name ?? user.email.split('@')[0]).split(' ')[0]
-      sendEmail(buildWelcomeEmail({ nama_user: nama, email: user.email })).catch(() => {})
 
-      // Set fullName dari Google profile jika belum ada
-      if (user.name) {
-        await db.update(users)
-          .set({ fullName: user.name, updatedAt: new Date() })
-          .where(eq(users.id, user.id!))
-          .catch(() => {})
-      }
+      // Sync fullName dari name (yang diisi Google OAuth via DrizzleAdapter)
+      await db.update(users)
+        .set({ fullName: user.name ?? nama, updatedAt: new Date() })
+        .where(eq(users.id, user.id!))
+        .catch(() => {})
+
+      // Welcome email (fire-and-forget)
+      sendEmail(buildWelcomeEmail({ nama_user: nama, email: user.email })).catch(() => {})
     },
   },
   providers: [

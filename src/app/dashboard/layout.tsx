@@ -30,7 +30,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     <PlanProvider isPremium={isPremium}>
       <div className="min-h-screen bg-[#FBF7F0]">
         <Sidebar
-          userName={userRow?.fullName ?? undefined}
+          userName={userRow?.fullName ?? userRow?.name ?? undefined}
           departureDate={userRow?.departureDate ?? undefined}
           prepProgress={progress}
           isPremium={isPremium}

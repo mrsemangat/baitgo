@@ -40,7 +40,7 @@ export default async function DashboardPage() {
   const activeTahap = ibadahProgressData.find(p => !p.completed)
   const todayTip = TIPS_HARIAN[new Date().getDay()]
 
-  const name = profile?.fullName ?? session.user.email?.split('@')[0] ?? 'Jamaah'
+  const name = profile?.fullName ?? profile?.name ?? session.user.email?.split('@')[0] ?? 'Jamaah'
   const firstName = name.split(' ')[0]
   const isPremium = profile?.plan === 'premium' || profile?.isAdmin === true
 
