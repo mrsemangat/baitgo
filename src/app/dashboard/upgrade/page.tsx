@@ -13,6 +13,7 @@ import type { BankAccount } from '@/lib/paymentSettings'
 // ── Constants ──────────────────────────────────────────────────────────────────
 
 const AMOUNT = 49000
+const TX_KEY = 'umrava_pending_tx'
 const ADMIN_WA = '6281313585848'
 
 const PREMIUM_FEATURES = [
@@ -172,6 +173,25 @@ export default function UpgradePage() {
   const [transferOrderId, setTransferOrderId] = useState('')
   const [transferSubmitting, setTransferSubmitting] = useState(false)
 
+  // Restore pending transaction from sessionStorage (handles page refresh / Duitku returnUrl)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const raw = sessionStorage.getItem(TX_KEY)
+    if (!raw) return
+    try {
+      const { transaction: tx } = JSON.parse(raw) as { transaction: PaymentTransaction }
+      if (tx?.expired_time * 1000 > Date.now()) {
+        setTransaction(tx)
+        setStep('instructions')
+        setAutoCheck(true)
+      } else {
+        sessionStorage.removeItem(TX_KEY)
+      }
+    } catch {
+      sessionStorage.removeItem(TX_KEY)
+    }
+  }, [])
+
   // Load payment method settings first, then conditionally load channels
   useEffect(() => {
     fetch('/api/payment/methods')
@@ -216,6 +236,7 @@ export default function UpgradePage() {
       const res = await fetch(`/api/payment/status?orderId=${transaction.merchantOrderId}`)
       const data = await res.json()
       if (data.statusCode === '00') {
+        sessionStorage.removeItem(TX_KEY)
         setStep('success')
         setAutoCheck(false)
         toast.success('Pembayaran berhasil! Akun Premium Anda telah aktif 🎉')
@@ -223,6 +244,7 @@ export default function UpgradePage() {
           window.fbq('track', 'Purchase', { value: AMOUNT, currency: 'IDR', content_name: 'Umrava Premium' })
         }
       } else if (data.statusCode === '02') {
+        sessionStorage.removeItem(TX_KEY)
         toast.error('Transaksi kadaluarsa atau gagal. Silakan buat transaksi baru.')
         setAutoCheck(false)
       }
@@ -267,6 +289,7 @@ export default function UpgradePage() {
       setTransaction(data.transaction)
       setStep('instructions')
       setAutoCheck(true)
+      sessionStorage.setItem(TX_KEY, JSON.stringify({ transaction: data.transaction }))
     } catch (e) {
       toast.error((e as Error).message)
     } finally {
@@ -298,9 +321,13 @@ export default function UpgradePage() {
   }
 
   const goBack = () => {
+    if (step === 'instructions') {
+      // Terkunci — sudah ada VA aktif, jangan buat transaksi baru
+      toast.info('Selesaikan pembayaran terlebih dahulu, atau tunggu VA kadaluarsa.')
+      return
+    }
     if (step === 'method') { router.back(); return }
     if (step === 'confirm' || step === 'transfer-instructions') setStep('method')
-    else if (step === 'instructions') setStep('confirm')
     else setStep('method')
   }
 
@@ -319,12 +346,14 @@ export default function UpgradePage() {
     <div className="max-w-lg mx-auto">
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
-        <button
-          onClick={goBack}
-          className="p-2 rounded-xl hover:bg-gray-100 transition-colors text-gray-500"
-        >
-          <ChevronLeft size={20} />
-        </button>
+        {step !== 'instructions' && (
+          <button
+            onClick={goBack}
+            className="p-2 rounded-xl hover:bg-gray-100 transition-colors text-gray-500"
+          >
+            <ChevronLeft size={20} />
+          </button>
+        )}
         <div>
           <h1 className="text-xl font-black text-[#0D4A28] flex items-center gap-2">
             <Crown size={20} className="text-[#C9A84C]" /> Upgrade Premium
@@ -747,6 +776,13 @@ export default function UpgradePage() {
             {autoCheck && '🔄 Cek otomatis setiap 30 detik · '}
             Status diperbarui otomatis setelah pembayaran masuk.
           </p>
+
+          <button
+            onClick={() => router.push('/dashboard')}
+            className="w-full py-3 border border-gray-200 text-gray-400 rounded-2xl text-sm hover:bg-gray-50 transition-colors"
+          >
+            Bayar Nanti — Kembali ke Dashboard
+          </button>
         </div>
       )}
 
