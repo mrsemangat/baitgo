@@ -6,6 +6,7 @@ import { formatRupiah } from '@/lib/utils'
 import Link from 'next/link'
 import { Users, Crown, DollarSign, UserPlus, BookOpen, Heart } from 'lucide-react'
 import { redirect } from 'next/navigation'
+import { ReconcileButton } from '@/components/admin/ReconcileButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -205,6 +206,11 @@ export default async function AdminPage() {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Reconcile */}
+      <div className="mb-6">
+        <ReconcileButton />
       </div>
 
       {/* Quick Actions */}
