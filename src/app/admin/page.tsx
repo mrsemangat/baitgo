@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { users, doaFavorites, ibadahProgress } from '@/lib/db/schema'
-import { eq, count, sql } from 'drizzle-orm'
+import { users, doaFavorites, ibadahProgress, webhookLogs } from '@/lib/db/schema'
+import { eq, count, sql, and } from 'drizzle-orm'
 import { formatRupiah } from '@/lib/utils'
 import Link from 'next/link'
 import { Users, Crown, DollarSign, UserPlus, BookOpen, Heart } from 'lucide-react'
@@ -43,9 +43,25 @@ export default async function AdminPage() {
     'multazam-zamzam': 'Multazam & Zamzam', sai: "Sa'i", tahallul: 'Tahallul',
   }
 
+  // Revenue dari transaksi Duitku terkonfirmasi (unique per orderId, bukan hitungan user premium)
+  const paidLogs = await db
+    .select({ orderId: webhookLogs.orderId, amount: webhookLogs.amount })
+    .from(webhookLogs)
+    .where(and(eq(webhookLogs.source, 'duitku'), eq(webhookLogs.userUpgraded, true)))
+
+  // Deduplikasi per orderId — ambil amount pertama per order
+  const seenOrders = new Set<string>()
+  let revenue = 0
+  let paidCount = 0
+  for (const log of paidLogs) {
+    if (!log.orderId || seenOrders.has(log.orderId)) continue
+    seenOrders.add(log.orderId)
+    revenue += log.amount ?? 49000
+    paidCount++
+  }
+
   const totalUsers = totalRow.count
   const premiumUsers = premiumRow.count
-  const revenue = premiumUsers * 49000
   const conversionRate = totalUsers ? ((premiumUsers / totalUsers) * 100).toFixed(1) : '0'
 
   return (
@@ -79,7 +95,7 @@ export default async function AdminPage() {
           {
             label: 'Total Revenue', value: formatRupiah(revenue), icon: DollarSign,
             color: 'bg-green-50 text-green-600', border: 'border-green-100',
-            sub: `${premiumUsers} × Rp49.000`
+            sub: `${paidCount} transaksi terkonfirmasi`
           },
           {
             label: 'User Free', value: freeRow.count, icon: UserPlus,
